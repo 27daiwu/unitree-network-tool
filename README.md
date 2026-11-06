@@ -171,20 +171,6 @@ Ping 成功不代表 SSH 服务或所有网络功能均正常。
 
 [GitHub Releases](https://github.com/27daiwu/unitree-network-tool/releases)
 
-## 🔐 文件完整性验证
-
-为帮助用户确认下载文件的完整性，后续正式版本将尽量随 Release 提供 SHA-256 校验值。
-
-下载后可在 Windows PowerShell 中执行：
-
-```powershell
-Get-FileHash .\Unitree-Network-Tool-v1.0.0.exe -Algorithm SHA256
-```
-
-将计算结果与对应版本 Release 中公布的 SHA-256 进行比较。
-
-如果两者不一致，请停止使用并重新从官方发布渠道下载。
-
 ## 💬 问题反馈与建议
 
 欢迎反馈 Bug、兼容性问题以及功能建议。
