@@ -6,7 +6,7 @@
 
 Unitree Network Tool is a Windows desktop application independently developed by JazzZhou for configuring robot connection parameters and managing Wi-Fi on supported devices. The software is permanently free and is distributed as a single-file EXE, with no Python installation required.
 
-> **Current version: v2.1.0**
+> **Current version: v2.1.1**
 >
 > **Supported robots: G1 series, H2 series, R1 series**
 
@@ -14,7 +14,7 @@ Unitree Network Tool is a Windows desktop application independently developed by
 
 - Single-file Windows EXE, portable, no installation required.
 - Unified SSH connection interface with editable address, username and password; passwords are shown in plain text.
-- Manual update check within the app.
+- Manual update checks with GitHub / Gitee dual-source detection and mirror synchronization status.
 - The Wi-Fi page provides status detection, scanning and connection operations.
 - Saved Wi-Fi profiles are loaded automatically the first time you open the page; saved passwords are shown in plain text, and multiple profiles can be collapsed.
 - Connection checks and confirmations are performed before network changes; unsupported or unverifiable configurations are rejected.
@@ -40,7 +40,7 @@ H2 defaults to PC2. The default PC2 password is `Unitree0408`, with an in-app sh
 
 Both channels publish exactly the same versions. The Gitee repository and its attachments are synced automatically from GitHub after each Release is published, and the attachments are SHA256-verified to match GitHub; if one channel is unreachable, simply use the other. For previous versions, visit the [Releases page](https://github.com/27daiwu/unitree-network-tool/releases) of either channel.
 
-v2.1.0 file name: `Unitree-Network-Tool-v2.1.0.exe`
+v2.1.1 file name: `Unitree-Network-Tool-v2.1.1.exe`
 
 1. Download the EXE from Releases.
 2. Close any older version that is still running.
@@ -58,6 +58,13 @@ No installation or Python environment is required. This repository only distribu
 Changing the robot's network may affect Wi-Fi or remote access. PC4 hotspot operations first check the wireless state and the SSH management link and require confirmation; no change is made when compatibility cannot be clearly determined. SSH credentials and readable saved Wi-Fi passwords are displayed in plain text in the UI — use the software only in trusted environments, and never disclose them or post them to Issues.
 
 ## Changelog
+
+### v2.1.1 — 2026-11-13
+
+- Added GitHub / Gitee dual-source update detection with automatic fallback.
+- Added mirror synchronization notices for version mismatches and a clear network error when both sources fail.
+- Update prompts now show the current version, latest version and release notes, with GitHub / Gitee download buttons.
+- Kept manual download and installation; the running EXE is never overwritten automatically.
 
 ### v2.1.0 — 2026-11-11
 
