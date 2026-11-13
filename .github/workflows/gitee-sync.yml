@@ -1,0 +1,131 @@
+# GitHub -> Gitee automatic sync for 27daiwu/unitree-network-tool
+#
+# What it does
+#   1. mirror-repo   : mirrors all branches and tags to Gitee using the mature
+#                      Yikun/hub-mirror-action (4000+ users). force_update keeps
+#                      Gitee an exact mirror of GitHub; GitHub stays untouched.
+#   2. sync-releases : mirrors GitHub Release metadata (tag, title, body,
+#                      prerelease) and every asset (EXE/ZIP/...) to Gitee via
+#                      Gitee API v5, verifying SHA256 on both sides.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions)
+#   GITEE_TOKEN            Gitee private token (https://gitee.com/profile/personal_access_tokens)
+#                          - scopes: projects (repo/release read+write)
+#   GITEE_SSH_PRIVATE_KEY  SSH private key whose public key is added to the Gitee
+#                          account (https://gitee.com/profile/sshkeys). Used by
+#                          hub-mirror-action to push code/tags:
+#                            ssh-keygen -t ed25519 -C "gitee-sync" -f gitee_sync_key
+#                            # add gitee_sync_key.pub to Gitee, store the private
+#                            # key file content as this secret
+#
+# Triggers
+#   - release published        : full sync of the new release (code, tags, release)
+#   - push to main             : code/tags mirror only (keeps Gitee consistent)
+#   - manual (workflow_dispatch): options below
+#       tag           sync one specific release tag (empty = latest)
+#       sync_all      backfill every historical release (oldest first, idempotent)
+#       skip_repo_sync skip the code/tags mirror (e.g. retry a failed release sync)
+#
+# Failure handling
+#   - every HTTP call retries with backoff; uploads re-verify SHA256 and retry
+#   - the release-sync step is wrapped in nick-fields/retry (3 attempts)
+#   - all operations are idempotent: re-running (manually or via "Re-run jobs")
+#     never duplicates data; matching files are skipped, mismatches repaired
+#   - GitHub releases are never modified or deleted by this workflow
+
+name: Sync to Gitee
+
+on:
+  release:
+    types: [published]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to sync (e.g. v2.1.0); empty = latest'
+        type: string
+        required: false
+        default: ''
+      sync_all:
+        description: 'Backfill all historical releases (oldest first)'
+        type: boolean
+        required: false
+        default: false
+      skip_repo_sync:
+        description: 'Skip code/tags mirror (release sync only)'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: gitee-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  GITHUB_SYNC_REPO: 27daiwu/unitree-network-tool
+  GITEE_OWNER: daiwu27
+  GITEE_REPO: unitree-network-tool
+
+jobs:
+  mirror-repo:
+    name: Mirror code & tags to Gitee
+    if: ${{ !inputs.skip_repo_sync }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Gitee secrets are configured
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_KEY: ${{ secrets.GITEE_SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "$GITEE_TOKEN" ] || [ -z "$GITEE_KEY" ]; then
+            echo "::error::Secrets GITEE_TOKEN and/or GITEE_SSH_PRIVATE_KEY are not configured."
+            echo "::error::See the header comment of .github/workflows/gitee-sync.yml for setup steps."
+            exit 1
+          fi
+
+      - name: Mirror branches and tags (hub-mirror-action)
+        uses: Yikun/hub-mirror-action@v1.5
+        with:
+          src: github/27daiwu
+          dst: gitee/daiwu27
+          dst_key: ${{ secrets.GITEE_SSH_PRIVATE_KEY }}
+          dst_token: ${{ secrets.GITEE_TOKEN }}
+          static_list: unitree-network-tool
+          force_update: true
+          timeout: '30m'
+
+  sync-releases:
+    name: Sync releases & assets to Gitee
+    needs: mirror-repo
+    if: >-
+      !cancelled() &&
+      (github.event_name == 'release' || github.event_name == 'workflow_dispatch') &&
+      (needs.mirror-repo.result == 'success' || needs.mirror-repo.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workflow scripts
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          sparse-checkout: .github
+
+      - name: Sync releases to Gitee (with retry)
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 90
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: |
+            ARGS="--github-repo $GITHUB_SYNC_REPO --gitee-owner $GITEE_OWNER --gitee-repo $GITEE_REPO"
+            if [ -n "$SYNC_TAG" ]; then ARGS="$ARGS --tag $SYNC_TAG"; fi
+            if [ "$SYNC_ALL" = "true" ]; then ARGS="$ARGS --all"; fi
+            python3 .github/scripts/sync_releases_to_gitee.py $ARGS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          SYNC_TAG: ${{ inputs.tag || github.event.release.tag_name }}
+          SYNC_ALL: ${{ inputs.sync_all }}

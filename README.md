@@ -33,7 +33,12 @@ H2 默认选择 PC2。PC2 默认密码为 `Unitree0408`，界面提供早期密�
 
 ## 下载与运行
 
-**[前往 GitHub Releases 下载最新版本](https://github.com/27daiwu/unitree-network-tool/releases/latest)**
+| 下载渠道 | 地址 | 适用场景 |
+| --- | --- | --- |
+| GitHub Releases（国际源） | [下载最新版本](https://github.com/27daiwu/unitree-network-tool/releases/latest) | 海外网络，或可正常访问 GitHub 时 |
+| Gitee Releases（国内镜像） | [下载最新版本](https://gitee.com/daiwu27/unitree-network-tool/releases/latest) | 中国大陆网络，下载更快 |
+
+两个渠道发布完全相同的版本。Gitee 仓库与附件由 GitHub 在每次 Release 发布后自动同步，附件经 SHA256 校验与 GitHub 一致；任一渠道无法访问时可改用另一个。历史版本请前往对应渠道的 [Releases 页面](https://github.com/27daiwu/unitree-network-tool/releases)下载。
 
 v2.0.0 文件名：`Unitree-Network-Tool-v2.0.0.exe`
 
@@ -83,4 +88,5 @@ Unitree Network Tool 为永久免费闭源软件。未经开发者授权，不�
 
 **Developer:** JazzZhou  
 **GitHub:** https://github.com/27daiwu/unitree-network-tool  
+**Gitee:** https://gitee.com/daiwu27/unitree-network-tool  
 **Copyright © 2026 JazzZhou. All rights reserved.**
