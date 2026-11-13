@@ -98,6 +98,7 @@ jobs:
           retry_wait_seconds: 30
           command: |
             set -euo pipefail
+            rm -rf repo.git
             git clone --bare "https://github.com/${GITHUB_SYNC_REPO}.git" repo.git
             cd repo.git
             # Feed the Gitee token to git's credential store (ephemeral runner
@@ -108,8 +109,7 @@ jobs:
               "${GITEE_OWNER}" "${GITEE_TOKEN}" | git credential approve
             git remote add gitee "https://gitee.com/${GITEE_OWNER}/${GITEE_REPO}.git"
             git push --force gitee 'refs/heads/*:refs/heads/*' --tags --prune
-            echo "Mirror pushed, Gitee refs now:"
-            git ls-remote gitee | sed 's/^/  /'
+            echo "Mirror push completed."
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
 
