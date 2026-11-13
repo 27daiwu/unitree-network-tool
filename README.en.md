@@ -33,7 +33,12 @@ H2 defaults to PC2. The default PC2 password is `Unitree0408`, with an in-app sh
 
 ## Download & Run
 
-**[Download the latest version from GitHub Releases](https://github.com/27daiwu/unitree-network-tool/releases/latest)**
+| Channel | Address | Best for |
+| --- | --- | --- |
+| GitHub Releases (international) | [Download the latest version](https://github.com/27daiwu/unitree-network-tool/releases/latest) | Overseas networks, or whenever GitHub is reachable |
+| Gitee Releases (China mirror) | [Download the latest version](https://gitee.com/daiwu27/unitree-network-tool/releases/latest) | Mainland China networks, faster downloads |
+
+Both channels publish exactly the same versions. The Gitee repository and its attachments are synced automatically from GitHub after each Release is published, and the attachments are SHA256-verified to match GitHub; if one channel is unreachable, simply use the other. For previous versions, visit the [Releases page](https://github.com/27daiwu/unitree-network-tool/releases) of either channel.
 
 v2.1.0 file name: `Unitree-Network-Tool-v2.1.0.exe`
 
@@ -91,4 +96,5 @@ This software is independently developed by a third party. It is not official Un
 
 **Developer:** JazzZhou  
 **GitHub:** https://github.com/27daiwu/unitree-network-tool  
+**Gitee:** https://gitee.com/daiwu27/unitree-network-tool  
 **Copyright © 2026 JazzZhou. All rights reserved.**
