@@ -1,22 +1,25 @@
 # GitHub -> Gitee automatic sync for 27daiwu/unitree-network-tool
 #
 # What it does
-#   1. mirror-repo   : mirrors all branches and tags to Gitee using the mature
-#                      Yikun/hub-mirror-action (4000+ users). force_update keeps
-#                      Gitee an exact mirror of GitHub; GitHub stays untouched.
+#   1. mirror-repo   : mirrors all branches and tags to Gitee with plain git
+#                      over HTTPS (token auth). force-push + prune keeps Gitee
+#                      an exact mirror of GitHub; GitHub stays untouched.
 #   2. sync-releases : mirrors GitHub Release metadata (tag, title, body,
 #                      prerelease) and every asset (EXE/ZIP/...) to Gitee via
 #                      Gitee API v5, verifying SHA256 on both sides.
 #
-# Required repository secrets (Settings -> Secrets and variables -> Actions)
-#   GITEE_TOKEN            Gitee private token (https://gitee.com/profile/personal_access_tokens)
-#                          - scopes: projects (repo/release read+write)
-#   GITEE_SSH_PRIVATE_KEY  SSH private key whose public key is added to the Gitee
-#                          account (https://gitee.com/profile/sshkeys). Used by
-#                          hub-mirror-action to push code/tags:
-#                            ssh-keygen -t ed25519 -C "gitee-sync" -f gitee_sync_key
-#                            # add gitee_sync_key.pub to Gitee, store the private
-#                            # key file content as this secret
+# Required repository secret (Settings -> Secrets and variables -> Actions)
+#   GITEE_TOKEN  Gitee private token of the repo owner
+#                (https://gitee.com/profile/personal_access_tokens)
+#                - scope: projects (repo/release/asset read+write)
+#
+# Why plain git instead of Yikun/hub-mirror-action?
+#   hub-mirror-action pushes over SSH (port 22), which hangs indefinitely from
+#   GitHub-hosted (Azure) runners to gitee.com - verified 2026-11-13: a mirror
+#   run hung for 35+ minutes without ever reaching the git timeout. The HTTPS
+#   push below performs the identical mirror refspec (all branches + all tags,
+#   force, prune) over port 443 and completes in seconds. Auth goes through
+#   git's credential store so the token never appears in URLs or logs.
 #
 # Triggers
 #   - release published        : full sync of the new release (code, tags, release)
@@ -28,9 +31,10 @@
 #
 # Failure handling
 #   - every HTTP call retries with backoff; uploads re-verify SHA256 and retry
-#   - the release-sync step is wrapped in nick-fields/retry (3 attempts)
+#   - both jobs wrap their core step in nick-fields/retry (3 attempts)
 #   - all operations are idempotent: re-running (manually or via "Re-run jobs")
 #     never duplicates data; matching files are skipped, mismatches repaired
+#   - concurrency group serializes runs, keeping only the newest queued run
 #   - GitHub releases are never modified or deleted by this workflow
 
 name: Sync to Gitee
@@ -76,27 +80,38 @@ jobs:
     if: ${{ !inputs.skip_repo_sync }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check Gitee secrets are configured
+      - name: Check Gitee token is configured
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-          GITEE_KEY: ${{ secrets.GITEE_SSH_PRIVATE_KEY }}
         run: |
-          if [ -z "$GITEE_TOKEN" ] || [ -z "$GITEE_KEY" ]; then
-            echo "::error::Secrets GITEE_TOKEN and/or GITEE_SSH_PRIVATE_KEY are not configured."
+          if [ -z "$GITEE_TOKEN" ]; then
+            echo "::error::Secret GITEE_TOKEN is not configured."
             echo "::error::See the header comment of .github/workflows/gitee-sync.yml for setup steps."
             exit 1
           fi
 
-      - name: Mirror branches and tags (hub-mirror-action)
-        uses: Yikun/hub-mirror-action@v1.5
+      - name: Mirror branches and tags (git over HTTPS, token auth)
+        uses: nick-fields/retry@v3
         with:
-          src: github/27daiwu
-          dst: gitee/daiwu27
-          dst_key: ${{ secrets.GITEE_SSH_PRIVATE_KEY }}
-          dst_token: ${{ secrets.GITEE_TOKEN }}
-          static_list: unitree-network-tool
-          force_update: true
-          timeout: '30m'
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            set -euo pipefail
+            git clone --bare "https://github.com/${GITHUB_SYNC_REPO}.git" repo.git
+            cd repo.git
+            # Feed the Gitee token to git's credential store (ephemeral runner
+            # disk only). The push URL stays clean, so logs and error messages
+            # never contain the token.
+            git config credential.helper store
+            printf 'protocol=https\nhost=gitee.com\nusername=%s\npassword=%s\n' \
+              "${GITEE_OWNER}" "${GITEE_TOKEN}" | git credential approve
+            git remote add gitee "https://gitee.com/${GITEE_OWNER}/${GITEE_REPO}.git"
+            git push --force gitee 'refs/heads/*:refs/heads/*' --tags --prune
+            echo "Mirror pushed, Gitee refs now:"
+            git ls-remote gitee | sed 's/^/  /'
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
 
   sync-releases:
     name: Sync releases & assets to Gitee
