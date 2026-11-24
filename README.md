@@ -6,7 +6,7 @@
 
 Unitree Network Tool 是 JazzZhou 独立开发的 Windows 桌面工具，用于配置机器人连接参数及管理适用设备的 Wi-Fi。软件永久免费，作为单文件 EXE 发布，无需安装 Python。
 
-> **当前版本：v2.1.1**
+> **当前版本：v2.1.2**
 >
 > **支持机型：G1 系列、H2 系列、R1 系列**
 
@@ -40,7 +40,7 @@ H2 默认选择 PC2。PC2 默认密码为 `Unitree0408`，界面提供早期密�
 
 两个渠道发布完全相同的版本。Gitee 仓库与附件由 GitHub 在每次 Release 发布后自动同步，附件经 SHA256 校验与 GitHub 一致；任一渠道无法访问时可改用另一个。历史版本请前往对应渠道的 [Releases 页面](https://github.com/27daiwu/unitree-network-tool/releases)下载。
 
-v2.1.1 文件名：`Unitree-Network-Tool-v2.1.1.exe`
+v2.1.2 文件名：`Unitree-Network-Tool-v2.1.2.exe`
 
 1. 从 Releases 下载 EXE。
 2. 关闭正在运行的旧版本。
@@ -58,6 +58,18 @@ v2.1.1 文件名：`Unitree-Network-Tool-v2.1.1.exe`
 修改机器人网络可能影响 Wi-Fi 或远程访问。PC4 热点操作会先检查无线状态和 SSH 管理链路，并要求确认；无法明确判断兼容性时不会执行修改。SSH 凭据及可读取的已保存 Wi-Fi 密码会在界面明文显示，请仅在可信环境使用，不要公开或提交到 Issues。
 
 ## 更新日志
+
+### v2.1.2 — 2026-11-24
+
+- 修复 Wi-Fi 被 rfkill 软件阻断后无法重新启用的问题。
+- 启用 Wi-Fi 时先检查并解除 Soft block，再开启 NetworkManager radio。
+- 检测到 Hard block 时拒绝软件启用，避免误报操作成功。
+- radio 设置直接使用 sudo，启用后核验真实状态；最终仍关闭则明确报错。
+- 网络状态按含义着色：未连接黄色、失能红色、已连接绿色。
+- 中文网络总览显示中文状态，不再直接展示 NetworkManager 原始英文状态。
+- SSH 连接前不再执行本机网络预检，并移除 radio 启用后的重复状态刷新；本机网络检查保留在网络诊断页。
+- 普通 Wi-Fi 扫描和连接不再自动进入 PC4 检测、切换或恢复流程；热点操作仅在用户明确触发后执行。
+- PC4 专用连接配置改用 NetworkManager 分配的 UUID，兼容禁止修改 connection.uuid 的系统。
 
 ### v2.1.1 — 2026-11-13
 

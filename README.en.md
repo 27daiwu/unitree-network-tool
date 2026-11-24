@@ -6,7 +6,7 @@
 
 Unitree Network Tool is a Windows desktop application independently developed by JazzZhou for configuring robot connection parameters and managing Wi-Fi on supported devices. The software is permanently free and is distributed as a single-file EXE, with no Python installation required.
 
-> **Current version: v2.1.1**
+> **Current version: v2.1.2**
 >
 > **Supported robots: G1 series, H2 series, R1 series**
 
@@ -40,7 +40,7 @@ H2 defaults to PC2. The default PC2 password is `Unitree0408`, with an in-app sh
 
 Both channels publish exactly the same versions. The Gitee repository and its attachments are synced automatically from GitHub after each Release is published, and the attachments are SHA256-verified to match GitHub; if one channel is unreachable, simply use the other. For previous versions, visit the [Releases page](https://github.com/27daiwu/unitree-network-tool/releases) of either channel.
 
-v2.1.1 file name: `Unitree-Network-Tool-v2.1.1.exe`
+v2.1.2 file name: `Unitree-Network-Tool-v2.1.2.exe`
 
 1. Download the EXE from Releases.
 2. Close any older version that is still running.
@@ -58,6 +58,18 @@ No installation or Python environment is required. This repository only distribu
 Changing the robot's network may affect Wi-Fi or remote access. PC4 hotspot operations first check the wireless state and the SSH management link and require confirmation; no change is made when compatibility cannot be clearly determined. SSH credentials and readable saved Wi-Fi passwords are displayed in plain text in the UI — use the software only in trusted environments, and never disclose them or post them to Issues.
 
 ## Changelog
+
+### v2.1.2 — 2026-11-24
+
+- Fixed Wi-Fi failing to re-enable after being soft-blocked by rfkill.
+- Enabling Wi-Fi now checks and clears the rfkill Soft block before turning on the NetworkManager radio.
+- Hard block is detected and software enablement is refused, preventing false success reports.
+- Radio changes use sudo directly and verify the resulting state; a clear error is raised if the radio stays off.
+- Network status is color-coded by meaning: disconnected yellow, disabled red, connected green.
+- The Chinese network overview shows localized status instead of raw NetworkManager English states.
+- SSH connections no longer run the local Windows network precheck, and redundant radio status reads after enablement were removed; local checks remain on the diagnostics page.
+- Regular Wi-Fi scans and connections no longer trigger PC4 detection, switching or restoration; hotspot operations run only when explicitly triggered by the user.
+- PC4-specific connection profiles now use NetworkManager-assigned UUIDs, compatible with systems that forbid modifying connection.uuid.
 
 ### v2.1.1 — 2026-11-13
 
