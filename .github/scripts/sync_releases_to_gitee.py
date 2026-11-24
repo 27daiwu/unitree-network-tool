@@ -38,6 +38,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 GITHUB_API = "https://api.github.com"
@@ -51,6 +52,9 @@ UPLOAD_ATTEMPTS = 3        # upload+verify cycles per asset
 REQUEST_TIMEOUT = 120      # seconds, for metadata API calls
 DOWNLOAD_TIMEOUT = 600     # seconds, for asset downloads (files are 40-60 MB)
 PER_PAGE = 100
+ASSET_WAIT_POLLS = 7       # re-fetches when a fresh release has no assets yet
+ASSET_WAIT_SECONDS = 20    # seconds between re-fetches (~2 minutes total)
+ASSET_FRESH_WINDOW = 900   # only wait for releases published < 15 minutes ago
 
 OK = "\u2713"   # check mark
 CHANGED = "~"
@@ -351,6 +355,44 @@ def expected_sha256(asset):
     return None
 
 
+def wait_for_assets_if_fresh(gh_release, github_repo, token):
+    """Handle the publish/upload race.
+
+    The release-published event fires the moment a release is published.
+    A publisher that creates the release first and uploads assets right
+    afterwards (REST API flow) triggers this sync before any asset exists.
+    Re-fetch a freshly published release a few times before concluding that
+    it really has no assets; older, genuinely asset-less releases are synced
+    without waiting.
+    """
+    if gh_release.get("assets"):
+        return gh_release
+    published = gh_release.get("published_at") or gh_release.get("created_at") or ""
+    try:
+        ts = datetime.fromisoformat(published.replace("Z", "+00:00"))
+    except ValueError:
+        return gh_release
+    age = (datetime.now(timezone.utc) - ts).total_seconds()
+    if age > ASSET_FRESH_WINDOW:
+        return gh_release
+    tag = gh_release["tag_name"]
+    for attempt in range(1, ASSET_WAIT_POLLS + 1):
+        log(
+            f"    . release {tag} has no assets yet ({int(age)}s after publish); "
+            f"waiting {ASSET_WAIT_SECONDS}s for the upload to finish "
+            f"({attempt}/{ASSET_WAIT_POLLS})"
+        )
+        time.sleep(ASSET_WAIT_SECONDS)
+        gh_release = github_api(
+            f"/repos/{github_repo}/releases/tags/{urllib.parse.quote(tag)}", token
+        )
+        if gh_release.get("assets"):
+            log(f"    . assets appeared on {tag}: {len(gh_release['assets'])} file(s)")
+            return gh_release
+    log(f"    ! release {tag} still has no assets; syncing metadata only")
+    return gh_release
+
+
 def download_and_verify_github_asset(asset, token, workdir):
     """Download one GitHub asset, verify its SHA256 against the API digest."""
     name = asset["name"]
@@ -386,6 +428,11 @@ def sync_one_release(gh_release, *, github_repo, owner, repo, tokens, args, work
     log("")
     log(f"=== Release {tag} - {gh_name} ===")
     log(f"    GitHub: {gh_release['html_url']}")
+
+    # A freshly published release may still be receiving its asset uploads
+    # (release-published event races the publisher's upload step); wait for
+    # them before concluding there is nothing to sync.
+    gh_release = wait_for_assets_if_fresh(gh_release, github_repo, tokens["github"])
 
     # 1) Download every GitHub asset first and verify integrity at the source.
     local_assets = []  # (asset, path, sha256)
