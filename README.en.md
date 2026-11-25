@@ -6,7 +6,7 @@
 
 Unitree Network Tool is a Windows desktop application independently developed by JazzZhou for configuring robot connection parameters and managing Wi-Fi on supported devices. The software is permanently free and is distributed as a single-file EXE, with no Python installation required.
 
-> **Current version: v2.1.2**
+> **Current version: v2.2.0**
 >
 > **Supported robots: G1 series, H2 series, R1 series**
 
@@ -40,7 +40,7 @@ H2 defaults to PC2. The default PC2 password is `Unitree0408`, with an in-app sh
 
 Both channels publish exactly the same versions. The Gitee repository and its attachments are synced automatically from GitHub after each Release is published, and the attachments are SHA256-verified to match GitHub; if one channel is unreachable, simply use the other. For previous versions, visit the [Releases page](https://github.com/27daiwu/unitree-network-tool/releases) of either channel.
 
-v2.1.2 file name: `Unitree-Network-Tool-v2.1.2.exe`
+v2.2.0 file name: `Unitree-Network-Tool-v2.2.0.exe`
 
 1. Download the EXE from Releases.
 2. Close any older version that is still running.
@@ -58,6 +58,17 @@ No installation or Python environment is required. This repository only distribu
 Changing the robot's network may affect Wi-Fi or remote access. PC4 hotspot operations first check the wireless state and the SSH management link and require confirmation; no change is made when compatibility cannot be clearly determined. SSH credentials and readable saved Wi-Fi passwords are displayed in plain text in the UI — use the software only in trusted environments, and never disclose them or post them to Issues.
 
 ## Changelog
+
+### v2.2.0 — 2026-11-25
+
+- Added WPA2/WPA3/mixed-protocol and dual-band AP identification with smart, compatible and advanced connection modes; security protocols are never downgraded without confirmation.
+- Same-name APs keep BSSID and band information; the actual association and valid IPv4 are verified after connecting, preventing duplicate activations.
+- "Unlock" and "Enable Wi-Fi" are unified into one flow: automatic unlock, radio enable, interface readiness, single scan and overview refresh.
+- The network overview is rebuilt as five compact cards (SSH, NetworkManager, wired, Wi-Fi, internet) with unified green/yellow/red/gray status semantics and merged duplicate routes.
+- Added layered diagnostics for association, authentication, DHCP, DNS, routing and internet connectivity, with raw redacted logs preserved.
+- Overview queries, configuration snapshots and autoconnect writes are consolidated; scans use short adaptive waits, and refresh/enable operations are re-entry protected.
+- IPv4 input distinguishes the quick (last-octet) mode from the full-address mode, with mode-specific labels and separate preview and validation lines.
+- Improved Chinese localization and the English catalog; regular Wi-Fi operations remain strictly isolated from PC4 hotspot switching.
 
 ### v2.1.2 — 2026-11-24
 
